@@ -1,32 +1,30 @@
 name: Docker Publish
 
 on:
-  push:
-    branches: [ "main" ]
-  pull_request:
-    branches: [ "main" ]
+   push:
+      branches: ["main"]
+   pull_request:
+      branches: ["main"]
 
 jobs:
+   build:
+      runs-on: ubuntu-latest
 
-  build:
+      steps:
+         - name: Checkout Repository
+         - uses: actions/checkout@v3
 
-    runs-on: ubuntu-latest
+         - name: Set Up Buildx
+           uses: docker/setup-buildx-actions@v1
+         - name: Login to docker hub
+           run: docker login -u ${{secrets.DOCKER_USERNAME}} -p ${{secrets.DOCKER_PASSWORD}}
+         - name: Build and push to docker image
+           run: |
+              docker buildx create --use
+              docker buildx inspect
 
-    steps:
-    - name: Checkout Repository
-    - uses: actions/checkout@v3
-    
-    - name: Set Up Buildx
-      uses: docker/setup-buildx-actions@v1
-    - name: Login to docker hub
-      run: docker login -u ${{secrets.DOCKER_USERNAME}} -p ${{secrets.DOCKER_PASSWORD}}
-    - name: Build and push to docker image
-      run: |
-        docker buildx create --use
-        docker buildx inspect
-
-        docker buildx build --platform linux/amd64,linux/arm64 -t rizkisetya/jsmongo:latest .
-        docker push rizkisetya/jsmongo:latest
-      env:
-        DOCKER_CLI_AGGREGATE: 1
-        DOCKER_BUILDKIT: 1
+              docker buildx build -t rizkisetya/jsmongo:latest .
+              docker push rizkisetya/jsmongo:latest
+           env:
+              DOCKER_CLI_AGGREGATE: 1
+              DOCKER_BUILDKIT: 1
