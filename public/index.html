@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<!-- Required meta tags -->
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+
+		<!-- Bootstrap CSS -->
+		<link
+			href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css"
+			rel="stylesheet"
+			integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC"
+			crossorigin="anonymous"
+		/>
+		<link rel="stylesheet" href="https://cdn.datatables.net/2.0.0/css/dataTables.dataTables.css" />
+
+		<title>Task Tracking</title>
+	</head>
+	<body>
+		<div class="container">
+			<h1>Task Tracking</h1>
+			<div class="row">
+				<div class="col-lg-4">
+					<form id="form-add">
+						<div class="form-group">
+							<label for="title">Title</label>
+							<input type="text" name="title" class="form-control" />
+						</div>
+						<div class="form-group">
+							<label for="description">Description</label>
+							<input type="text" name="description" class="form-control" />
+						</div>
+						<button class="btn btn-primary mt-3" type="submit">Submit</button>
+					</form>
+				</div>
+			</div>
+			<div class="table-responsive">
+				<table id="t-task" class="table table-striped table-bordered">
+					<thead>
+						<tr>
+							<!-- <th>No</th> -->
+							<th>Title</th>
+							<th>Task</th>
+							<th>Option</th>
+						</tr>
+					</thead>
+				</table>
+			</div>
+		</div>
+
+		<div class="modal" id="modal-update" tabindex="-1">
+			<form id="update">
+				<input type="hidden" name="id" id="id" />
+				<div class="modal-dialog">
+					<div class="modal-content">
+						<div class="modal-header">
+							<h5 class="modal-title">Update</h5>
+							<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+						</div>
+						<div class="modal-body">
+							<div class="form-group">
+								<label for="title">Title</label>
+								<input type="text" name="title" id="title" class="form-control" />
+							</div>
+							<div class="form-group">
+								<label for="description">Description</label>
+								<input type="text" id="description" name="description" class="form-control" />
+							</div>
+						</div>
+						<div class="modal-footer">
+							<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+							<button class="btn btn-primary" type="submit">Submit</button>
+						</div>
+					</div>
+				</div>
+			</form>
+		</div>
+		<!-- Optional JavaScript; choose one of the two! -->
+
+		<!-- Option 1: Bootstrap Bundle with Popper -->
+		<script
+			src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js"
+			integrity="sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAP+JcXn/tWtIaxVXM"
+			crossorigin="anonymous"
+		></script>
+		<script
+			src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"
+			integrity="sha512-v2CJ7UaYy4JwqLDIrZUI/4hqeoQieOmAZNXBeQyjo21dadnwR+8ZaIJVT8EE2iyI61OV8e6M8PP2/4hpQINQ/g=="
+			crossorigin="anonymous"
+			referrerpolicy="no-referrer"
+		></script>
+		<script src="https://cdn.datatables.net/2.0.0/js/dataTables.js"></script>
+
+		<!-- Option 2: Separate Popper and Bootstrap JS -->
+		<!--
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.2/dist/umd/popper.min.js" integrity="sha384-IQsoLXl5PILFhosVNubq5LC7Qb9DXgDA9i+tQ8Zj3iwWAwPtgFTxbJ8NT4GN1R8p" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.min.js" integrity="sha384-cVKIPhGWiC2Al4u+LWgxfKTRIcfu0JTxR+EQDz/bgldoEyl4H0zUF0QKbrJ0EcQF" crossorigin="anonymous"></script>
+    -->
+		<script>
+			const table = new DataTable("#t-task", {
+				responsive: true,
+				ajax: {
+					url: "/tasks",
+					type: "get",
+				},
+				columns: [
+					{
+						data: "title",
+						render: (data, type, row) => row?.title ?? "-",
+					},
+					{
+						data: "description",
+						render: (data, type, row) => row?.description ?? "-",
+					},
+					{
+						render: (data, type, row) => {
+							return `<button type="button" class="btn btn-warning" onclick="openModal('${row._id}')">Edit</button>`;
+						},
+					},
+				],
+			});
+
+			const submitTask = (e) => {
+				e.preventDefault();
+				let fd = new FormData(e.target);
+				fd = Object.fromEntries(fd.entries());
+				$.ajax({
+					method: "post",
+					url: "/",
+					data: fd,
+				}).done(function () {
+					table.ajax.reload();
+				});
+			};
+
+			const updateTask = (e) => {
+				e.preventDefault();
+				let fd = new FormData(e.target);
+				fd = Object.fromEntries(fd.entries());
+				$.ajax({
+					method: "put",
+					url: "/tasks/" + fd.id,
+					data: fd,
+				}).done(function () {
+					table.ajax.reload();
+					$("#modal-update").modal("hide");
+				});
+			};
+
+			document.getElementById("form-add").onsubmit = submitTask;
+			document.getElementById("update").onsubmit = updateTask;
+			$(document).ready(function () {
+				table.draw();
+			});
+
+			function openModal(id) {
+				$.ajax({
+					url: "/tasks/" + id,
+					type: "get",
+				}).done(function (task) {
+					const title = task?.title ?? "";
+					const desc = task?.description ?? "";
+
+					$("#modal-update #id").val(task?._id);
+					$("#modal-update #title").val(title);
+					$("#modal-update #description").val(desc);
+
+					$("#modal-update").modal("show");
+				});
+			}
+		</script>
+	</body>
+</html>
